@@ -10,6 +10,8 @@ return [
     'crmMailing',
     'crmUi',
     'crmUtil',
+    'crmResource',
     'api4'
   ],
+  'settingsFactory' => ['CRM_Anonymoustracking_Utils', 'getAngularSettings'],
 ];

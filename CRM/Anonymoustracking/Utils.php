@@ -34,5 +34,12 @@ class CRM_Anonymoustracking_Utils
     } catch (Exception $e) {
       return NULL;
     }
-  }  
+  }
+
+  public static function getAngularSettings(): array
+  {
+    return [
+      'anonymous_tracking_field_id' => 'custom_' . self::getMailingCustomFieldId(),
+    ];
+  }
 }
