@@ -4,7 +4,16 @@
       return {
         restrict: 'A',
         link: function (scope) {
-          scope.anonymous_tracking_field = CRM.crmAnonymoustracking.anonymous_tracking_field_id;
+          var fieldId = CRM.crmAnonymoustracking.anonymous_tracking_field_id;
+          scope.anonymous_tracking_field = fieldId;
+          const unwatch = scope.$watch('mailing', function (mailing) {
+            if (mailing) {
+              if (typeof mailing[fieldId] === 'undefined' || mailing[fieldId] === null) {
+                mailing[fieldId] = String(CRM.crmAnonymoustracking.anonymous_tracking_default);
+              }
+              unwatch();
+            }
+          });
         }
       };
     });
