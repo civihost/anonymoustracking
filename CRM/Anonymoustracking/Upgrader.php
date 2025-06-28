@@ -55,7 +55,8 @@ class CRM_Anonymoustracking_Upgrader extends \CRM_Extension_Upgrader_Base
       'label' => 'Enable Anonymous Tracking',
       'name' => 'enable_anonymous_tracking',
       'data_type' => 'Boolean',
-      'html_type' => 'CheckBox',
+      'html_type' => 'Radio',
+      'default_value' => 0,
       'serialize' => 0,
       'is_active' => 1,
     ];
