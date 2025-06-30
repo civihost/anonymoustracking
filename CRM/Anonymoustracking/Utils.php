@@ -40,7 +40,7 @@ class CRM_Anonymoustracking_Utils
   {
     return [
       'anonymous_tracking_field_id' => 'custom_' . self::getMailingCustomFieldId(),
-      'anonymous_tracking_default' => 1,//Civi::settings()->get('anonymous_tracking_default'),
+      'anonymous_tracking_default' => Civi::settings()->get('anonymous_tracking_default') ?? 0,
     ];
   }
 }

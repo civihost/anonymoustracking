@@ -45,6 +45,18 @@ function anonymoustracking_civicrm_pre($op, $objectName, $id, &$params)
   } elseif ($objectName === 'MailingEventOpened' && $op === 'create') {
 
     // TODO
+  } elseif ($objectName === 'Mailing' && $op === 'edit') {
+
+    if ($anonymous_tracking_default = Civi::settings()->get('anonymous_tracking_default')) {
+      $customFieldId = CRM_Anonymoustracking_Utils::getMailingCustomFieldId();
+      if (!isset($params['custom_' . $customFieldId])) {
+        $customParams = [
+          'entityID' => $id,
+          'custom_' . $customFieldId => $anonymous_tracking_default,
+        ];
+        \CRM_Core_BAO_CustomValueTable::setValues($customParams);
+      }
+    }
   }
   /*
 2025-05-13 09:56:18+0200  [debug] civicrm_pre MailingEventTrackableURLOpen op: create params: Array
