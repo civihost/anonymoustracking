@@ -44,8 +44,9 @@ function anonymoustracking_civicrm_pre($op, $objectName, $id, &$params)
     CRM_Anonymoustracking_Mailing_Page_Url::run();
   } elseif ($objectName === 'MailingEventOpened' && $op === 'create') {
 
-    // TODO
+    CRM_Anonymoustracking_Mailing_Page_Open::run();
   } elseif ($objectName === 'Mailing' && $op === 'edit') {
+
     //Civi::log()->debug('anonymoustracking_civicrm_pre ' . Civi::settings()->get('anonymous_tracking_default') . ' params: '. print_r($params, true));
     if ($anonymous_tracking_default = Civi::settings()->get('anonymous_tracking_default')) {
       $customFieldId = CRM_Anonymoustracking_Utils::getMailingCustomFieldId();

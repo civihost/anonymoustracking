@@ -1,21 +1,23 @@
 <?php
 
 /**
- * Adapted from CiviCRM core: CRM_Mailing_Page_Url (CRM/Mailing/Page/Url.php)
- * https://github.com/civicrm/civicrm-core/blob/master/CRM/Mailing/Page/Url.php
+ * Adapted from CiviCRM core: CRM_Mailing_Page_Open (CRM/Mailing/Page/Open.php)
+ * https://github.com/civicrm/civicrm-core/blob/master/CRM/Mailing/Page/Open.php
  *
  * Modified by Samuele Masetto, as part of an anonymous click-tracking feature.
  *
  * This code is licensed under the AGPLv3: https://www.gnu.org/licenses/agpl-3.0.html
  */
 
-class CRM_Anonymoustracking_Mailing_Page_Url
+class CRM_Anonymoustracking_Mailing_Page_Open
 {
 
   public static function run()
   {
-    $queue_id = CRM_Utils_Request::retrieveValue('qid', 'Integer');
-    $url_id = CRM_Utils_Request::retrieveValue('u', 'Integer', NULL, TRUE);
+    $queue_id = CRM_Utils_Request::retrieveValue('qid', 'Positive', NULL, FALSE, 'GET');
+    if (!$queue_id) {
+      CRM_Utils_System::sendInvalidRequestResponse(ts("Missing input parameters"));
+    }
 
     $mailing_id = CRM_Anonymoustracking_Utils::getMailingIdFromQueueId($queue_id);
     if (!$mailing_id) {
@@ -27,43 +29,19 @@ class CRM_Anonymoustracking_Mailing_Page_Url
       return;
     }
 
-    $url = trim(CRM_Anonymoustracking_BAO_MailingUrlOpen::track($mailing_id, $queue_id, $url_id));
+    CRM_Anonymoustracking_BAO_MailingOpened::open($mailing_id, $queue_id);
 
-    if (!$url) {
-      return;
-    }
+    $filename = Civi::paths()->getPath('[civicrm.root]/i/tracker.gif');
 
-    $query_string = self::ExtractPassthroughParameters();
+    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+    header('Content-Description: File Transfer');
+    header('Content-type: image/gif');
+    header('Content-Length: ' . filesize($filename));
+    header('Content-Disposition: inline; filename=tracker.gif');
 
-    if (strlen($query_string) > 0) {
-      // Parse the url to preserve the fragment.
-      $pieces = parse_url($url);
+    readfile($filename);
 
-      if (isset($pieces['fragment'])) {
-        $url = str_replace('#' . $pieces['fragment'], '', $url);
-      }
-
-      // Handle additional query string params.
-      if ($query_string) {
-        if (stristr($url, '?')) {
-          $url .= '&' . $query_string;
-        } else {
-          $url .= '?' . $query_string;
-        }
-      }
-
-      // slap the fragment onto the end per URL spec
-      if (isset($pieces['fragment'])) {
-        $url .= '#' . $pieces['fragment'];
-      }
-    }
-
-    CRM_Utils_System::redirect($url, [
-      'for' => 'civicrm/mailing/url',
-      'queue_id' => $queue_id,
-      'url_id' => $url_id,
-      'noindex' => TRUE,
-    ]);
+    CRM_Utils_System::civiExit();
   }
 
   /**

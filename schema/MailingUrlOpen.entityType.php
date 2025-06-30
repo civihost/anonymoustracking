@@ -19,9 +19,24 @@ return [
       'primary_key' => TRUE,
       'auto_increment' => TRUE,
     ],
+    'mailing_id' => [
+      'title' => ts('Mailing ID'),
+      'sql_type' => 'int unsigned',
+      'input_type' => 'EntityRef',
+      'required' => TRUE,
+      'description' => ts('The ID of a the mailing.'),
+      'input_attrs' => [
+        'label' => ts('Mailing'),
+      ],
+      'entity_reference' => [
+        'entity' => 'Mailing',
+        'key' => 'id',
+        'on_delete' => 'CASCADE',
+      ],
+    ],
     'anonymous_id' => [
       'title' => E::ts('Anonymous ID'),
-      'sql_type' => 'varchar(32)',
+      'sql_type' => 'varchar(64)',
       'input_type' => 'Text',
       'required' => TRUE,
       'description' => E::ts('Unique anonymous ID'),

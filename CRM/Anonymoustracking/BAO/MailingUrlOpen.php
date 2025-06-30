@@ -9,6 +9,8 @@ class CRM_Anonymoustracking_BAO_MailingUrlOpen extends CRM_Anonymoustracking_DAO
    *
    * If the numbers don't match up, return the base url.
    *
+   * @param int $mailing_id
+   *   The Mailing ID of the clicker.
    * @param int $queue_id
    *   The Queue Event ID of the clicker.
    * @param int $url_id
@@ -17,15 +19,8 @@ class CRM_Anonymoustracking_BAO_MailingUrlOpen extends CRM_Anonymoustracking_DAO
    * @return string
    *   The redirection url, or base url on failure.
    */
-  public static function track($queue_id, $url_id)
+  public static function track($mailing_id,$queue_id, $url_id)
   {
-    // TODO dal mailing capire se è un mailing anonimo
-    // $q = new CRM_Mailing_Event_BAO_MailingEventQueue();
-    // $q->id = $queue_id;
-    // if ($q->find(TRUE)) {
-    //   $mailing = &$q->getMailing();
-    // }
-
     // To find the url, we also join on the queue and job tables.  This
     // prevents foreign key violations.
     $job = CRM_Utils_Type::escape(CRM_Mailing_BAO_MailingJob::getTableName(), 'MysqlColumnNameOrAlias');
@@ -81,6 +76,7 @@ class CRM_Anonymoustracking_BAO_MailingUrlOpen extends CRM_Anonymoustracking_DAO
     }
 
     self::writeRecord([
+      'mailing_id' => $mailing_id,
       'anonymous_id' => CRM_Anonymoustracking_Utils::getAnonymizedQueueId($queue_id),
       'trackable_url_id' => $url_id,
       'time_stamp' => date('YmdHis'),
