@@ -1,4 +1,11 @@
 <?php
+/**
+ * Adapted from CiviCRM core: CRM_Mailing_Event_BAO_MailingEventTrackableURLOpen (CRM/Mailing/Event/BAO/MailingEventTrackableURLOpen.php)
+ *
+ * Modified by Samuele Masetto, as part of an anonymous click-tracking feature.
+ *
+ * This code is licensed under the AGPLv3: https://www.gnu.org/licenses/agpl-3.0.html
+ */
 
 use CRM_Anonymoustracking_ExtensionUtil as E;
 
@@ -112,38 +119,27 @@ class CRM_Anonymoustracking_BAO_MailingUrlOpen extends CRM_Anonymoustracking_DAO
     $dao = new CRM_Core_DAO();
 
     $click = self::getTableName();
-    $queue = CRM_Mailing_Event_BAO_MailingEventQueue::getTableName();
     $mailing = CRM_Mailing_BAO_Mailing::getTableName();
-    $job = CRM_Mailing_BAO_MailingJob::getTableName();
 
     $distinct = NULL;
     if ($is_distinct) {
       $distinct = 'DISTINCT ';
     }
     $query = "
-            SELECT      COUNT($distinct $click.event_queue_id) as opened
+            SELECT      COUNT($distinct $click.anonymous_id) as opened
             FROM        $click
-            INNER JOIN  $queue
-                    ON  $click.event_queue_id = $queue.id
-            INNER JOIN  $job
-                    ON  $queue.job_id = $job.id
             INNER JOIN  $mailing
-                    ON  $job.mailing_id = $mailing.id
-                    AND $job.is_test = 0
+                    ON  $click.mailing_id = $mailing.id
             WHERE       $mailing.id = " . CRM_Utils_Type::escape($mailing_id, 'Integer');
 
     if (!empty($toDate)) {
       $query .= " AND $click.time_stamp <= $toDate";
     }
 
-    if (!empty($job_id)) {
-      $query .= " AND $job.id = " . CRM_Utils_Type::escape($job_id, 'Integer');
-    }
-
     if (!empty($url_id)) {
       $query .= " AND $click.trackable_url_id = " . CRM_Utils_Type::escape($url_id, 'Integer');
     }
-
+Civi::log()->debug($query);
     // query was missing
     $dao->query($query);
 
@@ -170,195 +166,24 @@ class CRM_Anonymoustracking_BAO_MailingUrlOpen extends CRM_Anonymoustracking_DAO
     $clickCount = [];
 
     $click = self::getTableName();
-    $queue = CRM_Mailing_Event_BAO_MailingEventQueue::getTableName();
-    $job = CRM_Mailing_BAO_MailingJob::getTableName();
-    $mailingIDs = implode(',', $mailingIDs);
-
-    $query = "
-      SELECT $job.mailing_id as mailingID, COUNT($click.id) as opened
-      FROM $click
-      INNER JOIN $queue
-        ON  $click.event_queue_id = $queue.id
-      INNER JOIN $job
-        ON  $queue.job_id = $job.id
-        AND $job.is_test = 0
-      WHERE $job.mailing_id IN ({$mailingIDs})
-      GROUP BY civicrm_mailing_job.mailing_id
-    ";
-
-    $dao->query($query);
-
-    while ($dao->fetch()) {
-      $clickCount[$dao->mailingID] = $dao->opened;
-    }
-    return $clickCount;
-  }
-
-  /**
-   * Get tracked url count for each mailing for a given set of mailing IDs.
-   *
-   * @param int[] $mailingIDs
-   *   IDs of the mailing (comma separated).
-   * @param int $contactID
-   *   ID of the contact.
-   *
-   * @return array
-   *   Count per mailing ID
-   */
-  public static function getMailingContactCount($mailingIDs, $contactID)
-  {
-    $dao = new CRM_Core_DAO();
-    $clickCount = [];
-
-    $click = self::getTableName();
-    $queue = CRM_Mailing_Event_BAO_MailingEventQueue::getTableName();
-    $job = CRM_Mailing_BAO_MailingJob::getTableName();
-    $mailingIDs = implode(',', $mailingIDs);
-
-    $query = "
-      SELECT $job.mailing_id as mailingID, COUNT($click.id) as opened
-      FROM $click
-      INNER JOIN $queue
-        ON  $click.event_queue_id = $queue.id
-        AND $queue.contact_id = $contactID
-      INNER JOIN $job
-        ON  $queue.job_id = $job.id
-        AND $job.is_test = 0
-      WHERE $job.mailing_id IN ({$mailingIDs})
-      GROUP BY civicrm_mailing_job.mailing_id
-    ";
-
-    $dao->query($query);
-
-    while ($dao->fetch()) {
-      $clickCount[$dao->mailingID] = $dao->opened;
-    }
-
-    return $clickCount;
-  }
-
-  /**
-   * Get rows for the event browser.
-   *
-   * @param int $mailing_id
-   *   ID of the mailing.
-   * @param int $job_id
-   *   Optional ID of the job.
-   * @param bool $is_distinct
-   *   Group by queue id?.
-   * @param int $url_id
-   *   Optional ID of a trackable URL to filter on.
-   * @param int $offset
-   *   Offset.
-   * @param int $rowCount
-   *   Number of rows.
-   * @param mixed $sort
-   *   Sort array.
-   * @param int $contact_id
-   *   Optional contact ID.
-   *
-   * @return array
-   *   Result set
-   */
-  public static function &getRows(
-    $mailing_id,
-    $job_id,
-    $is_distinct,
-    $url_id,
-    $offset = NULL,
-    $rowCount = NULL,
-    $sort = NULL,
-    $contact_id = NULL
-  ) {
-
-    $dao = new CRM_Core_DAO();
-
-    $click = self::getTableName();
-    $url = CRM_Mailing_BAO_MailingTrackableURL::getTableName();
-    $queue = CRM_Mailing_Event_BAO_MailingEventQueue::getTableName();
     $mailing = CRM_Mailing_BAO_Mailing::getTableName();
-    $job = CRM_Mailing_BAO_MailingJob::getTableName();
-    $contact = CRM_Contact_BAO_Contact::getTableName();
-    $email = CRM_Core_BAO_Email::getTableName();
+    $mailingIDs = implode(',', $mailingIDs);
 
     $query = "
-            SELECT      $contact.display_name as display_name,
-                        $contact.id as contact_id,
-                        $email.email as email,";
+      SELECT $click.mailing_id as mailingID, COUNT($click.id) as opened
+      FROM $click
+      INNER JOIN $mailing
+              ON $click.mailing_id = $mailing.id
+      WHERE $click.mailing_id IN ({$mailingIDs})
+      GROUP BY $click.mailing_id
+    ";
 
-    if ($is_distinct) {
-      $query .= "MIN($click.time_stamp) as date,";
-    } else {
-      $query .= "$click.time_stamp as date,";
-    }
-
-    $query .= "$url.url as url
-            FROM        $contact
-            INNER JOIN  $queue
-                    ON  $queue.contact_id = $contact.id
-            INNER JOIN  $email
-                    ON  $queue.email_id = $email.id
-            INNER JOIN  $click
-                    ON  $click.event_queue_id = $queue.id
-            INNER JOIN  $url
-                    ON  $click.trackable_url_id = $url.id
-            INNER JOIN  $job
-                    ON  $queue.job_id = $job.id
-            INNER JOIN  $mailing
-                    ON  $job.mailing_id = $mailing.id
-                    AND $job.is_test = 0
-            WHERE       $mailing.id = " . CRM_Utils_Type::escape($mailing_id, 'Integer');
-
-    if (!empty($contact_id)) {
-      $query .= " AND $contact.id = " . CRM_Utils_Type::escape($contact_id, 'Integer');
-    }
-
-    if (!empty($job_id)) {
-      $query .= " AND $job.id = " . CRM_Utils_Type::escape($job_id, 'Integer');
-    }
-
-    if (!empty($url_id)) {
-      $query .= " AND $url.id = " . CRM_Utils_Type::escape($url_id, 'Integer');
-    }
-
-    if ($is_distinct) {
-      $query .= " GROUP BY $queue.id, $url.url ";
-    }
-
-    $orderBy = "sort_name ASC, {$click}.time_stamp DESC";
-    if ($sort) {
-      if (is_string($sort)) {
-        $sort = CRM_Utils_Type::escape($sort, 'String');
-        $orderBy = $sort;
-      } else {
-        $orderBy = trim($sort->orderBy());
-      }
-    }
-
-    $query .= " ORDER BY {$orderBy} ";
-
-    if ($offset || $rowCount) {
-      //Added "||$rowCount" to avoid displaying all records on first page
-      $query .= ' LIMIT ' . CRM_Utils_Type::escape($offset, 'Integer') . ', ' . CRM_Utils_Type::escape($rowCount, 'Integer');
-    }
-    CRM_Core_DAO::disableFullGroupByMode();
     $dao->query($query);
-    CRM_Core_DAO::reenableFullGroupByMode();
-    $results = [];
 
     while ($dao->fetch()) {
-      $url = CRM_Utils_System::url(
-        'civicrm/contact/view',
-        "reset=1&cid={$dao->contact_id}"
-      );
-      $results[] = [
-        'name' => "<a href=\"$url\">{$dao->display_name}</a>",
-        'email' => $dao->email,
-        'url' => $dao->url,
-        'date' => CRM_Utils_Date::customFormat($dao->date),
-      ];
+      $clickCount[$dao->mailingID] = $dao->opened;
     }
-    return $results;
+    return $clickCount;
   }
 
 }

@@ -59,23 +59,11 @@ function anonymoustracking_civicrm_pre($op, $objectName, $id, &$params)
       }
     }
   }
-  /*
-2025-05-13 09:56:18+0200  [debug] civicrm_pre MailingEventTrackableURLOpen op: create params: Array
-(
-    [event_queue_id] => 494985
-    [trackable_url_id] => 14049
-    [time_stamp] => 20250513095618
-)
-
-
-2025-05-13 09:57:25+0200  [debug] civicrm_pre MailingEventOpened op: create params: Array
-(
-    [event_queue_id] => 493412
-    [time_stamp] => 20250513095725
-)
-*/
 }
 
+/**
+ * Implements hook_civicrm_alterAngular().
+ */
 function anonymoustracking_civicrm_alterAngular(\Civi\Angular\Manager $angular)
 {
   $changeSet = \Civi\Angular\ChangeSet::create('inject_anonymoustracking')
@@ -93,4 +81,51 @@ function anonymoustracking_civicrm_alterAngular(\Civi\Angular\Manager $angular)
 </div>');
     });
   $angular->add($changeSet);
+}
+
+/**
+ * Implements hook_civicrm_pageRun().
+ */
+function anonymoustracking_civicrm_pageRun(&$page) {
+  $pageName = get_class($page);
+
+  if ($pageName == 'CRM_Mailing_Page_Report') {
+
+    $smarty = CRM_Core_Smarty::singleton();
+    $report = $smarty->get_template_vars('report');
+
+    $mailing_id = $report['mailing']['id'];
+    $anonymous_tracking = CRM_Anonymoustracking_Utils::getAnonyousTrackingFromMailingId($mailing_id);
+    if (!$anonymous_tracking) {
+      return;
+    }
+
+    // Declaration of anonymous tracking data inspired by the `report` method in CRM/Mailing/BAO/Mailing.php
+    $dao = CRM_Core_DAO::executeQuery("
+        SELECT COUNT(DISTINCT delivered.id) AS deliveries
+        FROM   civicrm_mailing_event_delivered delivered
+        INNER JOIN civicrm_mailing_event_queue queue
+                ON delivered.event_queue_id = queue.id
+        INNER JOIN civicrm_mailing_job job
+                ON queue.job_id = job.id
+        WHERE  job.mailing_id = %1
+          AND  job.is_test = 0", [
+        1 => [$mailing_id, 'Positive'],
+      ]);
+    if ($dao->fetch()) {
+
+      $report['event_totals']['opened'] = CRM_Anonymoustracking_BAO_MailingOpened::getTotalCount($mailing_id, NULL, TRUE);
+      $report['event_totals']['opened_rate'] = $dao->deliveries ? $report['event_totals']['opened'] / $dao->deliveries * 100 : 0;
+      $report['event_totals']['total_opened'] = CRM_Anonymoustracking_BAO_MailingOpened::getTotalCount($mailing_id, NULL);
+
+      // url is a number
+      $report['event_totals']['url'] = CRM_Anonymoustracking_BAO_MailingUrlOpen::getTotalCount($mailing_id, NULL);
+      $report['event_totals']['clickthrough_rate'] = $dao->deliveries ? $report['event_totals']['url'] / $dao->deliveries * 100 : 0;
+
+      Civi::log()->debug('anonymoustracking_civicrm_pageRun ' . $mailing_id . ' ' . print_r($report['event_totals'], true));
+
+      $smarty->assign('report', $report);
+    }
+
+  }
 }
