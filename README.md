@@ -1,4 +1,4 @@
-# Anonymous Tracking (WIP)
+# Anonymous Tracking
 
 This CiviCRM extension provides a mechanism to anonymize the tracking of email opens and clicks within the CiviMail component. It enables the collection of important campaign statistics, such as open and click-through rates, without compromising individual user privacy by decoupling tracking events from specific contacts.
 
@@ -37,8 +37,8 @@ Install as a regular CiviCRM extension.
 3. **View reports**: Access the Mailing Report as usual. If anonymous tracking was active, the aggregate statistics will be displayed. The drill-down lists for opens and clicks will be empty to ensure privacy.
 
 ## Known issues
-
-[https://github.com/civihost/anonymoustracking/issues](https://github.com/civihost/anonymoustracking/issues)
+* **Missing click-through report**: A detailed report for anonymous click-throughs, showing which specific links were clicked, is not yet implemented. Currently, only the aggregate click statistics are available in the main mailing report.
+* For any other issues, please check GitHub issue tracker: [https://github.com/civihost/anonymoustracking/issues](https://github.com/civihost/anonymoustracking/issues).
 
 ## Support
 
@@ -47,7 +47,3 @@ Please post bug reports in the issue tracker of this project on GitHub: [https:/
 While we do our best to provide free community support for this extension, please consider financially contributing to support or development of this extension.
 
 This is mantained by Samuele Masetto from [CiviHOST](https://www.civihost.it/) who you can contact for help, support and further development.
-
-## Disclaimer
-
-This is still a work-in-progress extension.
