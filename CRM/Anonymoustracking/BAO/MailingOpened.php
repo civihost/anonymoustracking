@@ -29,7 +29,7 @@ class CRM_Anonymoustracking_BAO_MailingOpened extends CRM_Anonymoustracking_DAO_
     if ($q->find(TRUE)) {
       self::writeRecord([
         'mailing_id' => $mailing_id,
-        'anonymous_id' => CRM_Anonymoustracking_Utils::getAnonymizedQueueId($queue_id),
+        'anonymous_id' => CRM_Anonymoustracking_Utils_Mailings::getAnonymizedQueueId($queue_id),
         'time_stamp' => date('YmdHis'),
       ]);
       return TRUE;
@@ -120,6 +120,100 @@ class CRM_Anonymoustracking_BAO_MailingOpened extends CRM_Anonymoustracking_DAO_
       $openedCount[$dao->mailingID] = $dao->opened;
     }
     return $openedCount;
+  }
+
+  /**
+   * Get rows for the event browser.
+   *
+   * @param int $mailing_id
+   *   ID of the mailing.
+   * @param int $job_id
+   *   Optional ID of the job.
+   * @param bool $is_distinct
+   *   Group by queue id?.
+   * @param int $offset
+   *   Offset.
+   * @param int $rowCount
+   *   Number of rows.
+   * @param array $sort
+   *   Sort array.
+   *
+   * @param int $contact_id
+   *
+   * @return array
+   *   Result set
+   */
+  public static function &getRows(
+    $mailing_id, $job_id = NULL,
+    $is_distinct = FALSE, $offset = NULL, $rowCount = NULL, $sort = NULL, $contact_id = NULL
+  ) {
+    $dao = new CRM_Core_DAO();
+
+    $open = self::getTableName();
+    $queue = CRM_Mailing_Event_BAO_MailingEventQueue::getTableName();
+    $mailing = CRM_Mailing_BAO_Mailing::getTableName();
+    $job = CRM_Mailing_BAO_MailingJob::getTableName();
+    $contact = CRM_Contact_BAO_Contact::getTableName();
+    $email = CRM_Core_BAO_Email::getTableName();
+
+    $selectClauses = [
+      "$open.anonymous_id as display_name",
+      "NULL as contact_id",
+      "NULL as email",
+      ($is_distinct) ? "MIN({$open}.time_stamp) as date" : "{$open}.time_stamp as date",
+    ];
+
+    if ($is_distinct) {
+      $groupBy = " GROUP BY $open.anonymous_id ";
+      $select = CRM_Contact_BAO_Query::appendAnyValueToSelect($selectClauses, "$open.anonymous_id");
+    }
+    else {
+      $groupBy = '';
+      $select = " SELECT " . implode(', ', $selectClauses);
+    }
+
+    $query = "
+            $select
+            FROM        $open
+            INNER JOIN  $mailing
+                    ON  $open.mailing_id = $mailing.id
+            WHERE       $mailing.id = " . CRM_Utils_Type::escape($mailing_id, 'Integer');
+
+    $query .= $groupBy;
+
+    $orderBy = "$open.anonymous_id ASC";
+    if (!$is_distinct) {
+      $orderBy .= ", {$open}.time_stamp DESC";
+    }
+    if ($sort) {
+      if (is_string($sort)) {
+        $sort = CRM_Utils_Type::escape($sort, 'String');
+        $orderBy = $sort;
+      }
+      else {
+        $orderBy = trim($sort->orderBy());
+      }
+    }
+
+    $query .= " ORDER BY {$orderBy} ";
+
+    if ($offset || $rowCount) {
+      //Added "||$rowCount" to avoid displaying all records on first page
+      $query .= ' LIMIT ' . CRM_Utils_Type::escape($offset, 'Integer') . ', ' . CRM_Utils_Type::escape($rowCount, 'Integer');
+    }
+
+    $dao->query($query);
+
+    $results = [];
+
+    while ($dao->fetch()) {
+      $results[] = [
+        'name' => $dao->display_name,
+        'email' => $dao->email,
+        'date' => CRM_Utils_Date::customFormat($dao->date),
+      ];
+    }
+    return $results;
   }
 
 }

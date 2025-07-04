@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/mailing/report/event/anon</path>
+    <title>Anonymous Mailing Event</title>
+    <page_callback>CRM_Anonymoustracking_Page_EventAnon</page_callback>
+    <access_arguments>access CiviMail</access_arguments>
+    <weight>695</weight>
+  </item>
+</menu>

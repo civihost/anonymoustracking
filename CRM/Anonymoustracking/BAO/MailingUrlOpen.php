@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Adapted from CiviCRM core: CRM_Mailing_Event_BAO_MailingEventTrackableURLOpen (CRM/Mailing/Event/BAO/MailingEventTrackableURLOpen.php)
  *
@@ -9,7 +10,8 @@
 
 use CRM_Anonymoustracking_ExtensionUtil as E;
 
-class CRM_Anonymoustracking_BAO_MailingUrlOpen extends CRM_Anonymoustracking_DAO_MailingUrlOpen {
+class CRM_Anonymoustracking_BAO_MailingUrlOpen extends CRM_Anonymoustracking_DAO_MailingUrlOpen
+{
 
   /**
    * Track a click-through and return the URL to redirect.
@@ -26,7 +28,7 @@ class CRM_Anonymoustracking_BAO_MailingUrlOpen extends CRM_Anonymoustracking_DAO
    * @return string
    *   The redirection url, or base url on failure.
    */
-  public static function track($mailing_id,$queue_id, $url_id)
+  public static function track($mailing_id, $queue_id, $url_id)
   {
     // To find the url, we also join on the queue and job tables.  This
     // prevents foreign key violations.
@@ -84,7 +86,7 @@ class CRM_Anonymoustracking_BAO_MailingUrlOpen extends CRM_Anonymoustracking_DAO
 
     self::writeRecord([
       'mailing_id' => $mailing_id,
-      'anonymous_id' => CRM_Anonymoustracking_Utils::getAnonymizedQueueId($queue_id),
+      'anonymous_id' => CRM_Anonymoustracking_Utils_Mailings::getAnonymizedQueueId($queue_id),
       'trackable_url_id' => $url_id,
       'time_stamp' => date('YmdHis'),
     ]);
@@ -139,7 +141,7 @@ class CRM_Anonymoustracking_BAO_MailingUrlOpen extends CRM_Anonymoustracking_DAO
     if (!empty($url_id)) {
       $query .= " AND $click.trackable_url_id = " . CRM_Utils_Type::escape($url_id, 'Integer');
     }
-Civi::log()->debug($query);
+
     // query was missing
     $dao->query($query);
 
@@ -186,4 +188,101 @@ Civi::log()->debug($query);
     return $clickCount;
   }
 
+  /**
+   * Get rows for the event browser.
+   *
+   * @param int $mailing_id
+   *   ID of the mailing.
+   * @param int $job_id
+   *   Optional ID of the job.
+   * @param bool $is_distinct
+   *   Group by queue id?.
+   * @param int $url_id
+   *   Optional ID of a trackable URL to filter on.
+   * @param int $offset
+   *   Offset.
+   * @param int $rowCount
+   *   Number of rows.
+   * @param array $sort
+   *   Sort array.
+   * @param int $contact_id
+   *   Optional contact ID.
+   *
+   * @return array
+   *   Result set
+   */
+  public static function &getRows(
+    $mailing_id,
+    $job_id,
+    $is_distinct,
+    $url_id,
+    $offset = NULL,
+    $rowCount = NULL,
+    $sort = NULL,
+    $contact_id = NULL
+  ) {
+
+    $dao = new CRM_Core_DAO();
+
+    $click = self::getTableName();
+    $url = CRM_Mailing_BAO_MailingTrackableURL::getTableName();
+    $mailing = CRM_Mailing_BAO_Mailing::getTableName();
+
+    $query = "
+            SELECT      $click.anonymous_id as display_name,
+                        NULL as contact_id,
+                        NULL as email,";
+
+    if ($is_distinct) {
+      $query .= "MIN($click.time_stamp) as date,";
+    } else {
+      $query .= "$click.time_stamp as date,";
+    }
+
+    $query .= "$url.url as url
+            FROM        $click
+            INNER JOIN  $url
+                    ON  $click.trackable_url_id = $url.id
+            INNER JOIN  $mailing
+                    ON  $click.mailing_id = $mailing.id
+            WHERE       $mailing.id = " . CRM_Utils_Type::escape($mailing_id, 'Integer');
+
+    if (!empty($url_id)) {
+      $query .= " AND $url.id = " . CRM_Utils_Type::escape($url_id, 'Integer');
+    }
+
+    if ($is_distinct) {
+      $query .= " GROUP BY $click.anonymous_id, $url.url ";
+    }
+
+    $orderBy = "$click.anonymous_id ASC, {$click}.time_stamp DESC";
+    if ($sort) {
+      if (is_string($sort)) {
+        $sort = CRM_Utils_Type::escape($sort, 'String');
+        $orderBy = $sort;
+      } else {
+        $orderBy = trim($sort->orderBy());
+      }
+    }
+
+    $query .= " ORDER BY {$orderBy} ";
+
+    if ($offset || $rowCount) {
+      $query .= ' LIMIT ' . CRM_Utils_Type::escape($offset, 'Integer') . ', ' . CRM_Utils_Type::escape($rowCount, 'Integer');
+    }
+    CRM_Core_DAO::disableFullGroupByMode();
+    $dao->query($query);
+    CRM_Core_DAO::reenableFullGroupByMode();
+    $results = [];
+
+    while ($dao->fetch()) {
+      $results[] = [
+        'name' => $dao->display_name,
+        'email' => $dao->email,
+        'url' => $dao->url,
+        'date' => CRM_Utils_Date::customFormat($dao->date),
+      ];
+    }
+    return $results;
+  }
 }

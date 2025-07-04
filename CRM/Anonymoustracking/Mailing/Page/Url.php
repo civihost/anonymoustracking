@@ -17,12 +17,12 @@ class CRM_Anonymoustracking_Mailing_Page_Url
     $queue_id = CRM_Utils_Request::retrieveValue('qid', 'Integer');
     $url_id = CRM_Utils_Request::retrieveValue('u', 'Integer', NULL, TRUE);
 
-    $mailing_id = CRM_Anonymoustracking_Utils::getMailingIdFromQueueId($queue_id);
+    $mailing_id = CRM_Anonymoustracking_Utils_Mailings::getMailingIdFromQueueId($queue_id);
     if (!$mailing_id) {
       return;
     }
 
-    $anonymous_tracking = CRM_Anonymoustracking_Utils::getAnonyousTrackingFromMailingId($mailing_id);
+    $anonymous_tracking = CRM_Anonymoustracking_Utils_Mailings::getAnonyousTrackingFromMailingId($mailing_id);
     if (!$anonymous_tracking) {
       return;
     }

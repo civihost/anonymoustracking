@@ -2,7 +2,7 @@
 
 This CiviCRM extension provides a mechanism to anonymize the tracking of email opens and clicks within the CiviMail component. It enables the collection of important campaign statistics, such as open and click-through rates, without compromising individual user privacy by decoupling tracking events from specific contacts.
 
-The core functionality involves intercepting the standard CiviMail tracking URLs. When anonymous tracking is enabled for a given mailing, the extension redirects the tracking data to dedicated, anonymous storage tables, thereby severing any link to the originating contact record.
+The core functionality involves intercepting the standard CiviMail tracking URLs. When anonymous tracking is enabled for a given mailing, the extension redirects the tracking data to dedicated anonymous storage tables, thereby severing any link to the originating contact record.
 
 This extension is licensed under [AGPL-3.0](LICENSE.txt).
 
@@ -10,10 +10,10 @@ This extension is licensed under [AGPL-3.0](LICENSE.txt).
 
 The extension introduces two new tables to the CiviCRM schema to handle anonymous data:
 
-* `civicrm_anonymoustracking_mailing_opened`: Stores anonymous open events, recording the `mailing_id` and a `time_stamp`.
-* `civicrm_anonymoustracking_mailing_url_open`: Stores anonymous click-through events, recording the `mailing_id`, `trackable_url_id`, a `time_stamp`, and a unique anonymous identifier.
+* `civicrm_anonymoustracking_mailing_opened`: Stores anonymous open events, recording the `anonymous_id`, `mailing_id` and a `time_stamp`.
+* `civicrm_anonymoustracking_mailing_url_open`: Stores anonymous click-through events, recording the  `anonymous_id`, `mailing_id`, `trackable_url_id`, a `time_stamp`, and a unique anonymous identifier.
 
-To calculate unique clicks without user identification, the extension generates a non-reversible anonymous identifier for each recipient. This is achieved by applying the `hash_hmac` cryptographic function with a `sha256` algorithm to the event queue ID (`queue_id`), using the site-specific `CIVICRM_SITE_KEY` as the secret key. This process ensures that multiple clicks from the same recipient are counted as a single unique event, while making it computationally impossible to reverse the hash and identify the recipient.
+To calculate unique clicks without user identification, the extension generates a non-reversible **anonymous identifier for each recipient**. This is achieved by applying the `hash_hmac` cryptographic function with a `sha256` algorithm to the event queue ID (`queue_id`), using the site-specific `CIVICRM_SITE_KEY` as the secret key. This process ensures that multiple clicks from the same recipient are counted as a single unique event, while making it computationally impossible to reverse the hash and identify the recipient.
 
 ## Requirements
 

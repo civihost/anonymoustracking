@@ -19,12 +19,12 @@ class CRM_Anonymoustracking_Mailing_Page_Open
       CRM_Utils_System::sendInvalidRequestResponse(ts("Missing input parameters"));
     }
 
-    $mailing_id = CRM_Anonymoustracking_Utils::getMailingIdFromQueueId($queue_id);
+    $mailing_id = CRM_Anonymoustracking_Utils_Mailings::getMailingIdFromQueueId($queue_id);
     if (!$mailing_id) {
       return;
     }
 
-    $anonymous_tracking = CRM_Anonymoustracking_Utils::getAnonyousTrackingFromMailingId($mailing_id);
+    $anonymous_tracking = CRM_Anonymoustracking_Utils_Mailings::getAnonyousTrackingFromMailingId($mailing_id);
     if (!$anonymous_tracking) {
       return;
     }

@@ -49,7 +49,7 @@ function anonymoustracking_civicrm_pre($op, $objectName, $id, &$params)
 
     //Civi::log()->debug('anonymoustracking_civicrm_pre ' . Civi::settings()->get('anonymous_tracking_default') . ' params: '. print_r($params, true));
     if ($anonymous_tracking_default = Civi::settings()->get('anonymous_tracking_default')) {
-      $customFieldId = CRM_Anonymoustracking_Utils::getMailingCustomFieldId();
+      $customFieldId = CRM_Anonymoustracking_Utils_Mailings::getMailingCustomFieldId();
       if (!isset($params['custom_' . $customFieldId])) {
         $customParams = [
           'entityID' => $id,
@@ -86,46 +86,30 @@ function anonymoustracking_civicrm_alterAngular(\Civi\Angular\Manager $angular)
 /**
  * Implements hook_civicrm_pageRun().
  */
-function anonymoustracking_civicrm_pageRun(&$page) {
+function anonymoustracking_civicrm_pageRun(&$page)
+{
   $pageName = get_class($page);
 
   if ($pageName == 'CRM_Mailing_Page_Report') {
-
     $smarty = CRM_Core_Smarty::singleton();
     $report = $smarty->get_template_vars('report');
 
     $mailing_id = $report['mailing']['id'];
-    $anonymous_tracking = CRM_Anonymoustracking_Utils::getAnonyousTrackingFromMailingId($mailing_id);
-    if (!$anonymous_tracking) {
-      return;
+
+    $anonymous_tracking = CRM_Anonymoustracking_Utils_Mailings::getAnonyousTrackingFromMailingId($mailing_id);
+
+    // FIXME this is a trick to add a setting in the Content section of the Report
+    // because in the Report template there is no way to add a setting
+    $report['component'][] = [
+      'type' => E::ts('Anonomous Tracking'),
+      'name' => $anonymous_tracking ? ts('Enabled') : ts('Disabled'),
+      'link' => '#',
+    ];
+
+    if ($anonymous_tracking) {
+      CRM_Anonymoustracking_Utils_Reports::overrideReportWithAnonymousTracking($report, $mailing_id);
     }
 
-    // Declaration of anonymous tracking data inspired by the `report` method in CRM/Mailing/BAO/Mailing.php
-    $dao = CRM_Core_DAO::executeQuery("
-        SELECT COUNT(DISTINCT delivered.id) AS deliveries
-        FROM   civicrm_mailing_event_delivered delivered
-        INNER JOIN civicrm_mailing_event_queue queue
-                ON delivered.event_queue_id = queue.id
-        INNER JOIN civicrm_mailing_job job
-                ON queue.job_id = job.id
-        WHERE  job.mailing_id = %1
-          AND  job.is_test = 0", [
-        1 => [$mailing_id, 'Positive'],
-      ]);
-    if ($dao->fetch()) {
-
-      $report['event_totals']['opened'] = CRM_Anonymoustracking_BAO_MailingOpened::getTotalCount($mailing_id, NULL, TRUE);
-      $report['event_totals']['opened_rate'] = $dao->deliveries ? $report['event_totals']['opened'] / $dao->deliveries * 100 : 0;
-      $report['event_totals']['total_opened'] = CRM_Anonymoustracking_BAO_MailingOpened::getTotalCount($mailing_id, NULL);
-
-      // url is a number
-      $report['event_totals']['url'] = CRM_Anonymoustracking_BAO_MailingUrlOpen::getTotalCount($mailing_id, NULL);
-      $report['event_totals']['clickthrough_rate'] = $dao->deliveries ? $report['event_totals']['url'] / $dao->deliveries * 100 : 0;
-
-      Civi::log()->debug('anonymoustracking_civicrm_pageRun ' . $mailing_id . ' ' . print_r($report['event_totals'], true));
-
-      $smarty->assign('report', $report);
-    }
-
+    $smarty->assign('report', $report);
   }
 }

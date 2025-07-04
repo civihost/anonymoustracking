@@ -1,12 +1,8 @@
 <?php
 
-use PhpOffice\PhpSpreadsheet\Calculation\Logical\Boolean;
-use PhpOffice\PhpWord\Writer\HTML\Part\Body;
+use CRM_Anonymoustracking_ExtensionUtil as E;
 
-/**
- * Utils - class with generic functions CiviRules
- */
-class CRM_Anonymoustracking_Utils
+class CRM_Anonymoustracking_Utils_Mailings
 {
   public static function getAnonymizedQueueId($queueid)
   {
