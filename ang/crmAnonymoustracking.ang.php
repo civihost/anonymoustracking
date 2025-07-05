@@ -8,5 +8,5 @@ return [
   'requires' => [
     'crmMailing',
   ],
-  'settingsFactory' => ['CRM_Anonymoustracking_Utils', 'getAngularSettings'],
+  'settingsFactory' => ['CRM_Anonymoustracking_Utils_Mailings', 'getAngularSettings'],
 ];

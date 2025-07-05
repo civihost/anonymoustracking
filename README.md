@@ -15,6 +15,13 @@ The extension introduces two new tables to the CiviCRM schema to handle anonymou
 
 To calculate unique clicks without user identification, the extension generates a non-reversible **anonymous identifier for each recipient**. This is achieved by applying the `hash_hmac` cryptographic function with a `sha256` algorithm to the event queue ID (`queue_id`), using the site-specific `CIVICRM_SITE_KEY` as the secret key. This process ensures that multiple clicks from the same recipient are counted as a single unique event, while making it computationally impossible to reverse the hash and identify the recipient.
 
+This extension creates two CiviMail report templates and instances:
+
+1. **Anonymous Mail Opened Report**
+2. **Anonymous Mail Clickthroughs Report**
+
+For anonymous mailings, these templates are used instead of the standard ones.
+
 ## Requirements
 
 * PHP v7.4+
@@ -31,13 +38,19 @@ Install as a regular CiviCRM extension.
 ![civimail_component_settings](https://github.com/user-attachments/assets/2fc6c422-b597-4a56-a357-cb9fafcc1494)
 
 2. **Per-mailing configuration**: When composing a new mailing, go to the **Tracking** tab. A new "Anonymous tracking" checkbox will be present, allowing you to control the tracking method for that specific campaign. If it was set up previously to be enabled by default the checkbox will already be checked.
+For traditional mailings:  
+![traditional mailing](https://github.com/user-attachments/assets/39568c73-e967-4464-a640-f667160291cb)
 
-![image](https://github.com/user-attachments/assets/39568c73-e967-4464-a640-f667160291cb)
+For Mosaico malings:  
+![mosaico malings](https://github.com/user-attachments/assets/2d116565-05a8-4c8c-b6aa-93c25137aa4d)
 
-3. **View reports**: Access the Mailing Report as usual. If anonymous tracking was active, the aggregate statistics will be displayed. The drill-down lists for opens and clicks will be empty to ensure privacy.
+3. **Mailing report**: access the Mailing Report as usual. If anonymous tracking was active, anonymous statistics for openings (Unique Opens or Total Opens) and click-throughs will be displayed. Click on “Report” the new reports “Anonymous Mail Opened Report” and  “Anonymous Mail Clickthroughs Report” are displayed.
+The “Content” section displays the anonymous tracking settings. Yes, we know this is not the right section, but in the Smarty template of the report there is no way to add a new setting except by overwriting it or using Javascript, and we don't think it's worth it.
+
+![content](https://github.com/user-attachments/assets/9962357c-2d1a-4689-9e7b-aee09ba73c12)
+
 
 ## Known issues
-* **Missing click-through report**: A detailed report for anonymous click-throughs, showing which specific links were clicked, is not yet implemented. Currently, only the aggregate click statistics are available in the main mailing report.
 * For any other issues, please check GitHub issue tracker: [https://github.com/civihost/anonymoustracking/issues](https://github.com/civihost/anonymoustracking/issues).
 
 ## Support
