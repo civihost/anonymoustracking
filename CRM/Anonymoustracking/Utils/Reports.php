@@ -25,8 +25,8 @@ class CRM_Anonymoustracking_Utils_Reports
                 ON queue.job_id = job.id
         WHERE  job.mailing_id = %1
           AND  job.is_test = 0", [
-        1 => [$mailing_id, 'Positive'],
-      ]);
+      1 => [$mailing_id, 'Positive'],
+    ]);
     if ($dao->fetch()) {
 
       $report['event_totals']['opened'] = CRM_Anonymoustracking_BAO_MailingOpened::getTotalCount($mailing_id, NULL, TRUE);
@@ -37,8 +37,41 @@ class CRM_Anonymoustracking_Utils_Reports
       $report['event_totals']['url'] = CRM_Anonymoustracking_BAO_MailingUrlOpen::getTotalCount($mailing_id, NULL);
       $report['event_totals']['clickthrough_rate'] = $dao->deliveries ? $report['event_totals']['url'] / $dao->deliveries * 100 : 0;
 
+      $report['event_totals']['clickthrough_rate'] = !empty($report['event_totals']['delivered']) ? 
+      (($report['event_totals']['url'] / $report['event_totals']['delivered']) * 100.0) : 0;
+
+
       $report['click_through'] = self::getClickThroughs($mailing_id, $dao->deliveries);
+
+      $report['event_totals']['actionlinks']['opened'] = self::getActionLink($mailing_id, 'anonymous/mailing/opened', '&distinct=0');
+      $report['event_totals']['actionlinks']['opened_unique'] = self::getActionLink($mailing_id, 'anonymous/mailing/opened', '&distinct=1');
+      $report['event_totals']['actionlinks']['clicks'] = self::getActionLink($mailing_id, 'anonymous/mailing/clicks', '&distinct=0');
+      $report['event_totals']['actionlinks']['clicks_unique'] = self::getActionLink($mailing_id, 'anonymous/mailing/clicks', '&distinct=0');
     }
+  }
+
+  public static function getActionLink($mailing_id, $url, $reportFilter)
+  {
+    $reportFilter = "reset=1&mailing_id_value={$mailing_id}" . $reportFilter;
+
+    $actionLinks = [CRM_Core_Action::VIEW => ['name' => ts('Report')]];
+    $actionLinks[CRM_Core_Action::ADVANCED] = [];
+    $actionLinks[CRM_Core_Action::VIEW]['url'] = CRM_Report_Utils_Report::getNextUrl($url, $reportFilter, FALSE, TRUE);
+    $actionLinks[CRM_Core_Action::VIEW]['weight'] = -20;
+
+
+    $action = array_sum(array_keys($actionLinks));
+
+    return CRM_Core_Action::formLink(
+      $actionLinks,
+      $action,
+      ['mid' => $mailing_id],
+      ts('more'),
+      FALSE,
+      'mailing.report.action',
+      'Mailing',
+      $mailing_id
+    );
   }
 
   public static function getClickThroughs($mailing_id, $deliveries)

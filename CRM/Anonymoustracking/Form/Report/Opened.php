@@ -69,7 +69,7 @@ class CRM_Anonymoustracking_Form_Report_Opened extends CRM_Report_Form_Mailing_O
         'id' => [
           'required' => TRUE,
           'no_display' => TRUE,
-          'dbAlias' => CRM_Utils_SQL::supportsFullGroupBy() ? 'ANY_VALUE(anonymoustracking_trackable_url_civireport.id)' : NULL,
+          'dbAlias' => CRM_Utils_SQL::supportsFullGroupBy() ? 'ANY_VALUE(anonymoustracking_mailing_opened_civireport.id)' : NULL,
         ],
         'time_stamp' => [
           'title' => ts('Open Date'),
