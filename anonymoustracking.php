@@ -91,7 +91,7 @@ function anonymoustracking_civicrm_pageRun(&$page)
 
   if ($pageName == 'CRM_Mailing_Page_Report') {
     $smarty = CRM_Core_Smarty::singleton();
-    $report = $smarty->get_template_vars('report');
+    $report = $smarty->getTemplateVars('report');
 
     $mailing_id = $report['mailing']['id'];
 
